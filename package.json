@@ -1,0 +1,35 @@
+{
+  "name": "react-toolbelt",
+  "version": "1.2.0",
+  "description": "A simple functional library to simplify and unify commonly used React component functionality",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kasvtv/react-toolbelt.git"
+  },
+  "keywords": [
+    "react",
+    "mixins",
+    "functional",
+    "hooks",
+    "promise",
+    "form",
+    "handler"
+  ],
+  "author": "Kas van 't Veer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kasvtv/react-toolbelt/issues"
+  },
+  "homepage": "https://github.com/kasvtv/react-toolbelt#readme",
+  "dependencies": {
+    "memoize-weak-promise": "^1.1.0"
+  },
+  "peerDependencies": {
+    "react": ">16.8.0"
+  },
+  "devDependencies": {}
+}

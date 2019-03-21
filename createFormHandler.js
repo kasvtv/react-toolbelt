@@ -1,11 +1,11 @@
 var getFormValueFromTarget = require('./utils/getFormValueFromTarget');
 var createSetInnerState = require('./utils/createSetInnerState');
 
-function createFormHandler(path='') {
-	var setStateFunction = createSetInnerState(path);
+function createFormHandler(parentProp='') {
+	var setStateFunction = createSetInnerState(parentProp);
 
 	return function(event) {
-		return setStateFunction({
+		setStateFunction({
 			[event.target.name]: getFormValueFromTarget(event.target)
 		});
 	};

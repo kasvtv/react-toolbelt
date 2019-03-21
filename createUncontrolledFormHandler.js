@@ -1,11 +1,9 @@
 var getFormValueFromTarget = require('./utils/getFormValueFromTarget');
 
-function createUncontrolledFormHandler(path) {
+function createUncontrolledFormHandler(parentProp) {
 	return function(event) {
 		var target = event.target;
-		(path ? this[path] : this)[target.name] = getFormValueFromTarget(target);
-
-		return false;
+		(parentProp ? this[parentProp] : this)[target.name] = getFormValueFromTarget(target);
 	};
 }
 module.exports = createUncontrolledFormHandler;

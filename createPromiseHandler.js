@@ -3,10 +3,10 @@ var applyPromiseOptionsDefaults = require('./utils/applyPromiseOptionsDefaults')
 var createPromiseFunction = require('./utils/createPromiseFunction');
 var createSetInnerState = require('./utils/createSetInnerState');
 
-function createPromiseHandler(fn, path, options) {
+function createPromiseHandler(fn, parentProp, options) {
 	var promiseFunction = bindPromiseFunctionToState(
 		createPromiseFunction(fn, applyPromiseOptionsDefaults(options)),
-		createSetInnerState(path)
+		createSetInnerState(parentProp)
 	);
 
 	return function() {

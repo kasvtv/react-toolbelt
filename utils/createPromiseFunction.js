@@ -1,24 +1,43 @@
 var fromPairs = require('./fromPairs');
 var memoize = require('memoize-weak-promise');
 
-function applyOptions(options) {
+function createOptionsApplier(options) {
 	return function(promiseFn)  {
 	
-		return function() {
-			return promiseFn.apply(this, arguments).then(
+		return function applyOptions() {
+			var promise = promiseFn.apply(this, arguments);
+			
+			var ret = promise.then(
 				function(data) {
 					if (options.shouldThrow(data)) throw data;
 					return options.getData(data);
 				}
 			).catch(
 				options.getError
-			)
-		}
-	}
+			);
+
+			// copy any enumerable properties on the promise
+			for (var ind in promise) {
+				Object.defineProperty(
+					ret,
+					ind,
+					Object.getOwnPropertyDescriptor(promise, ind)
+				);
+			}
+
+			return ret;
+		};
+	};
+}
+
+function assertArray(val) {
+	return Array.isArray(val)
+		? val
+		: [val];
 }
 
 module.exports = function createPromiseFunction(fn, options) {
-	var apply = applyOptions(options);
+	var applyOptions = createOptionsApplier(options);
 
 	var ret = fn && typeof fn === 'object' ?
 		function(args) {
@@ -27,8 +46,10 @@ module.exports = function createPromiseFunction(fn, options) {
 					function (pair) {
 						var k = pair[0];
 						var v = pair[1];
+
+						var a = assertArray( (args || {})[k] );
 						return [
-							k, apply(v((args || {})[k]))
+							k, applyOptions(v(a))
 						];
 					}
 				)
@@ -38,14 +59,15 @@ module.exports = function createPromiseFunction(fn, options) {
 		function(args) {
 			return Promise.all(
 				fn.map(
-					function(x, i) {
-						return apply(x((args || [])[i]));
+					function(f, i) {
+						var a = assertArray( (args || [])[i] );
+						return applyOptions(f(a));
 					}
 				)
 			);
 		}
 	:
-	apply(fn);
+	applyOptions(fn);
 
 	if (options.memoize) {
 		ret = memoize(ret, options);

@@ -36,38 +36,62 @@ function assertArray(val) {
 		: [val];
 }
 
-module.exports = function createPromiseFunction(fn, options) {
-	var applyOptions = createOptionsApplier(options);
+function objectify(objectOfAsyncFunctions, applyToFn) {
+	var keys = Object.keys(objectOfAsyncFunctions);
 
-	var ret = fn && typeof fn === 'object' ?
-		function(args) {
-			return Promise.all(
-				Object.entries(fn).map(
-					function (pair) {
-						var k = pair[0];
-						var v = pair[1];
+	var appliedFunctions = keys.map(
+		function(key) { return applyToFn(objectOfAsyncFunctions[key]) }
+	);
 
-						var a = assertArray( (args || {})[k] );
-						return [
-							k, applyOptions(v(a))
-						];
+	return function(args) {
+		args = args || {};
+
+		return Promise.all(keys.map(
+			function(key, i) {
+				var a = assertArray(args[key]);
+				return appliedFunctions[i].apply(this, a);
+			}
+		)).then(
+			function(resolvedPromises) {
+				return fromPairs(resolvedPromises.map(
+					function(resolved, i) {
+						return [keys[i], resolved];
 					}
-				)
-			).then(fromPairs);
-		}
-	: Array.isArray(fn) ?
-		function(args) {
-			return Promise.all(
-				fn.map(
-					function(f, i) {
-						var a = assertArray( (args || [])[i] );
-						return applyOptions(f(a));
-					}
-				)
-			);
-		}
-	:
-	applyOptions(fn);
+				));
+			}
+		);
+	}
+}
+
+function arrayfy(arrayOfAsyncFunctions, applyToFn) {
+	var appliedFunctions = arrayOfAsyncFunctions.map(
+		function(fn) { return applyToFn(fn) }
+	);
+	
+	return function(args) {
+		args = args || [];
+
+		return Promise.all(
+			appliedFunctions.map(
+				function(fn, i) {
+					var a = assertArray(args[i]);
+					return fn.apply(this, a);
+				}
+			)
+		);
+	}
+}
+
+module.exports = function createPromiseFunction(functionality, options) {
+	var applyToFn = createOptionsApplier(options);
+
+	var ret =
+		Array.isArray(functionality) ?
+			arrayfy(functionality, applyToFn)
+		: functionality && typeof functionality === 'object' ?
+			objectify(functionality, applyToFn)
+		:
+			applyToFn(functionality);
 
 	if (options.memoize) {
 		ret = memoize(ret, options);

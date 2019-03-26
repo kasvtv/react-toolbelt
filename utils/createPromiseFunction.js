@@ -47,12 +47,13 @@ function arrayfy(arrayOfAsyncFunctions, applyToFn) {
 	
 	return function(args) {
 		args = args || [];
+		var that = this;
 
 		return Promise.all(
 			appliedFunctions.map(
 				function(fn, i) {
 					var a = assertArray(args[i]);
-					return fn.apply(this, a);
+					return fn.apply(that, a);
 				}
 			)
 		);
@@ -68,11 +69,12 @@ function objectify(objectOfAsyncFunctions, applyToFn) {
 
 	return function(args) {
 		args = args || {};
+		var that = this;
 
 		return Promise.all(keys.map(
 			function(key, i) {
 				var a = assertArray(args[key]);
-				return appliedFunctions[i].apply(this, a);
+				return appliedFunctions[i].apply(that, a);
 			}
 		)).then(
 			function(resolvedPromises) {

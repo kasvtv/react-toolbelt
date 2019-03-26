@@ -1,8 +1,8 @@
 module.exports = function bindPromiseFunctionToState(promiseFn, setState) {
 	var count = 0;
 
-	return function (args) {		
-		var promise = promiseFn(args);
+	return function() {		
+		var promise = promiseFn.apply(this, arguments);
 		count++;
 		var countAtStart = count;
 		var promisePending = true;

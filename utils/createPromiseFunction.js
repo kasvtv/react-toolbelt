@@ -1,10 +1,16 @@
 var fromPairs = require('./fromPairs');
 var memoize = require('memoize-weak-promise');
 
+function assertArray(val) {
+	return Array.isArray(val)
+		? val
+		: [val];
+}
+
 function createOptionsApplier(options) {
 	return function(promiseFn)  {
 	
-		return function applyOptions() {
+		var appliedFunction = function() {
 			var promise = promiseFn.apply(this, arguments);
 			
 			var ret = promise.then(
@@ -26,14 +32,31 @@ function createOptionsApplier(options) {
 			}
 
 			return ret;
-		};
-	};
+		}
+
+		return options.memoize
+			? memoize(appliedFunction, options)
+			: appliedFunction;
+	}
 }
 
-function assertArray(val) {
-	return Array.isArray(val)
-		? val
-		: [val];
+function arrayfy(arrayOfAsyncFunctions, applyToFn) {
+	var appliedFunctions = arrayOfAsyncFunctions.map(
+		function(fn) { return applyToFn(fn) }
+	);
+	
+	return function(args) {
+		args = args || [];
+
+		return Promise.all(
+			appliedFunctions.map(
+				function(fn, i) {
+					var a = assertArray(args[i]);
+					return fn.apply(this, a);
+				}
+			)
+		);
+	}
 }
 
 function objectify(objectOfAsyncFunctions, applyToFn) {
@@ -63,39 +86,17 @@ function objectify(objectOfAsyncFunctions, applyToFn) {
 	}
 }
 
-function arrayfy(arrayOfAsyncFunctions, applyToFn) {
-	var appliedFunctions = arrayOfAsyncFunctions.map(
-		function(fn) { return applyToFn(fn) }
-	);
-	
-	return function(args) {
-		args = args || [];
-
-		return Promise.all(
-			appliedFunctions.map(
-				function(fn, i) {
-					var a = assertArray(args[i]);
-					return fn.apply(this, a);
-				}
-			)
-		);
-	}
+function funcify(asyncFunction, applyToFn) {
+	return applyToFn(asyncFunction);
 }
 
 module.exports = function createPromiseFunction(functionality, options) {
 	var applyToFn = createOptionsApplier(options);
 
-	var ret =
-		Array.isArray(functionality) ?
-			arrayfy(functionality, applyToFn)
-		: functionality && typeof functionality === 'object' ?
-			objectify(functionality, applyToFn)
-		:
-			applyToFn(functionality);
-
-	if (options.memoize) {
-		ret = memoize(ret, options);
-	}
-
-	return ret;
+	return Array.isArray(functionality) ?
+		arrayfy(functionality, applyToFn)
+	: functionality && typeof functionality === 'object' ?
+		objectify(functionality, applyToFn)
+	:
+		funcify(functionality, applyToFn);
 };

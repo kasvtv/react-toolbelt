@@ -1,33 +1,28 @@
-module.exports = function bindPromiseFunctionToState(promiseFn, setState) {
+module.exports = function bindPromiseFunctionToState(fn, setState) {
 	var count = 0;
 
-	return function() {		
-		var promise = promiseFn.apply(this, arguments);
-		count++;
-		var countAtStart = count;
-		var promisePending = true;
+	return function() {
+		var promise = fn.apply(this, arguments);
 		var that = this;
+		var countAtStart = ++count;
+		var pending = true;
 
-		promise.then(function() {promisePending = false});
+		function load() { pending = false; }
+		function done(obj) {
+			if (count === countAtStart) {
+				setState.call(that, obj);
+			}
+		}
+
+		promise.then(load, load);
 
 		setTimeout(function() {
 
-			if (promisePending) {
-				setState.call(that, {loading: true, data: null, error: null});
-			}
+			if (pending) { done({ loading: true, data: null, error: null }); }
 
 			promise.then(
-				function(data) {
-					if (count === countAtStart) {
-						setState.call(that, {loading: false, data: data, error: null});
-					}
-				}
-			).catch(
-				function(error) {
-					if (count === countAtStart) {
-						setState.call(that, {loading: false, data: null, error: error});
-					}
-				}
+				function(x) { done({ loading: false, data: x, error: null }); },
+				function(x) { done({ loading: false, data: null, error: x }); }
 			);
 		});
 

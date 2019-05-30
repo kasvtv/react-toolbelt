@@ -7,7 +7,7 @@ function createFormHandler(parentProp) {
 	return function(event) {
 		var toSet = {};
 		toSet[event.target.name] = getFormValueFromTarget(event.target);
-		setStateFunction(toSet);
+		setStateFunction.call(this, toSet);
 	};
 }
 

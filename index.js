@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 module.exports = {
 	createFormHandler: require('./createFormHandler'),
 	createMemoizedPromiseHandler: require('./createMemoizedPromiseHandler'),

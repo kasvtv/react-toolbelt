@@ -1,10 +1,15 @@
 {
   "name": "react-toolbelt",
   "version": "3.1.1",
-  "description": "A simple functional library to simplify and unify commonly used React component functionality",
+  "description": "Simple functions for DRY forms and async data loading in React",
   "main": "index.js",
+  "files": [
+    "**/!(*.test|*.conf*|*.setup|.*).js"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run lint && npm run es-check && jest -i",
+    "lint": "cross-env NODE_ENV=production eslint \"{utils,.}/*.js\"",
+    "es-check": "es-check es5 \"{utils,.}/!(*.test|*.conf*|*.setup|.*).js\" --quiet"
   },
   "repository": {
     "type": "git",
@@ -12,10 +17,12 @@
   },
   "keywords": [
     "react",
-    "mixins",
+    "dry",
     "functional",
     "hooks",
+    "async",
     "promise",
+    "memoize",
     "form",
     "handler"
   ],
@@ -31,5 +38,22 @@
   "peerDependencies": {
     "react": ">16.8.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.4.4",
+    "@babel/plugin-transform-modules-commonjs": "^7.4.4",
+    "@babel/preset-react": "^7.0.0",
+    "@types/jest": "^24.0.13",
+    "babel-eslint": "^10.0.1",
+    "enzyme": "^3.9.0",
+    "enzyme-adapter-react-16": "^1.13.2",
+    "es-check": "^5.0.0",
+    "eslint": "^5.16.0",
+    "eslint-plugin-import": "^2.17.3",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-react": "^7.13.0",
+    "eslint-plugin-react-hooks": "^1.6.0",
+    "jest": "^24.8.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  }
 }

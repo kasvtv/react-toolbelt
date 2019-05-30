@@ -14,7 +14,7 @@ function useForm(initialState) {
 		stateHook[0],
 		function setForm(e) {
 			stateHook[1](e.target);
-		}
+		},
 	];
 }
 

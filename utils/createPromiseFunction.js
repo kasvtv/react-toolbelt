@@ -1,5 +1,5 @@
-var fromPairs = require('./fromPairs');
-var memoize = require('memoize-weak-promise');
+/* eslint-disable no-param-reassign */
+/* for lack of es6 default params */
 
 function assertArray(val) {
 	return Array.isArray(val)
@@ -7,44 +7,47 @@ function assertArray(val) {
 		: [val];
 }
 
-function createOptionsApplier(options) {
-	return function(promiseFn)  {
-	
-		var appliedFunction = function() {
-			var promise = promiseFn.apply(this, arguments);
-			
-			var ret = promise.then(
-				function(data) {
-					if (options.shouldThrow(data)) throw data;
-					return options.getData(data);
-				}
-			).catch(function(error) {
-				throw options.getError(error);
-			});
+function applyOptions(fn, options) {
 
-			// copy any enumerable properties on the promise
-			for (var ind in promise) {
-				Object.defineProperty(
-					ret,
-					ind,
-					Object.getOwnPropertyDescriptor(promise, ind)
-				);
+	var appliedFunction = function() {
+		var promise = fn.apply(this, arguments);
+
+		var ret = promise.then(
+			function(data) {
+				if (options.shouldThrow && options.shouldThrow(data)) throw data;
+				return options.getData ? options.getData(data) : data;
 			}
+		).catch(function(error) {
+			throw options.getError ? options.getError(error) : error;
+		});
 
-			return ret;
+		// copy any enumerable properties on the promise
+		for (var ind in promise) {
+			Object.defineProperty(
+				ret,
+				ind,
+				Object.getOwnPropertyDescriptor(promise, ind)
+			);
 		}
 
-		return options.memoize
-			? memoize(appliedFunction, options)
-			: appliedFunction;
+		return ret;
+	};
+
+	if (options.memoizeFn) {
+		return options.memoizeFn(
+			appliedFunction,
+			Object.assign({ weak: false }, options)
+		);
 	}
+
+	return appliedFunction;
 }
 
-function arrayfy(arrayOfAsyncFunctions, applyToFn) {
-	var appliedFunctions = arrayOfAsyncFunctions.map(
-		function(fn) { return applyToFn(fn) }
+function arrayfy(fns, options) {
+	var appliedFunctions = fns.map(
+		function(fn) { return applyOptions(fn, options); }
 	);
-	
+
 	return function(args) {
 		args = args || [];
 		var that = this;
@@ -57,14 +60,14 @@ function arrayfy(arrayOfAsyncFunctions, applyToFn) {
 				}
 			)
 		);
-	}
+	};
 }
 
-function objectify(objectOfAsyncFunctions, applyToFn) {
-	var keys = Object.keys(objectOfAsyncFunctions);
+function objectify(fns, options) {
+	var keys = Object.keys(fns);
 
-	var appliedFunctions = keys.map(
-		function(key) { return applyToFn(objectOfAsyncFunctions[key]) }
+	var appliedFns = keys.map(
+		function(key) { return applyOptions(fns[key], options); }
 	);
 
 	return function(args) {
@@ -74,31 +77,31 @@ function objectify(objectOfAsyncFunctions, applyToFn) {
 		return Promise.all(keys.map(
 			function(key, i) {
 				var a = assertArray(args[key]);
-				return appliedFunctions[i].apply(that, a);
+				return appliedFns[i].apply(that, a);
 			}
 		)).then(
 			function(resolvedPromises) {
-				return fromPairs(resolvedPromises.map(
+				var ret = {};
+				resolvedPromises.forEach(
 					function(resolved, i) {
-						return [keys[i], resolved];
+						ret[keys[i]] = resolved;
 					}
-				));
+				);
+				return ret;
 			}
 		);
+	};
+}
+
+module.exports = function createPromiseFunction(fn, options) {
+	options = options || {};
+
+	if (Array.isArray(fn)) {
+		return arrayfy(fn, options);
 	}
-}
+	if (fn && typeof fn === 'object') {
+		return objectify(fn, options);
 
-function funcify(asyncFunction, applyToFn) {
-	return applyToFn(asyncFunction);
-}
-
-module.exports = function createPromiseFunction(functionality, options) {
-	var applyToFn = createOptionsApplier(options);
-
-	return Array.isArray(functionality) ?
-		arrayfy(functionality, applyToFn)
-	: functionality && typeof functionality === 'object' ?
-		objectify(functionality, applyToFn)
-	:
-		funcify(functionality, applyToFn);
+	}
+	return applyOptions(fn, options);
 };

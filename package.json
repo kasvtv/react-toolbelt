@@ -1,6 +1,6 @@
 {
   "name": "react-toolbelt",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Simple functions for DRY forms and async data loading in React",
   "main": "index.js",
   "files": [
